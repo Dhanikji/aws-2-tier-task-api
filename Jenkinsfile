@@ -2,13 +2,13 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION     = 'ap-south-1'
-        ECR_REGISTRY   = '427025827458.dkr.ecr.ap-south-1.amazonaws.com'
-        ECR_REPOSITORY = 'task-api'
-        IMAGE_TAG      = "jenkins-${BUILD_NUMBER}"
+        AWS_REGION      = 'ap-south-1'
+        ECR_REGISTRY    = '427025827458.dkr.ecr.ap-south-1.amazonaws.com'
+        ECR_REPOSITORY  = 'task-api'
+        IMAGE_TAG       = "jenkins-${BUILD_NUMBER}"
 
-        EC2_INSTANCE_1 = 'i-08f5e98b5a8851860'
-        EC2_INSTANCE_2 = 'i-075c4345ba12b9e60'
+        EC2_INSTANCE_1  = 'i-08f5e98b5a8851860'
+        EC2_INSTANCE_2  = 'i-075c4345ba12b9e60'
     }
 
     stages {
@@ -62,7 +62,9 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 sh '''
-                    echo "Deploying ${ECR_REPOSITORY}:${IMAGE_TAG} to EC2 instances..."
+                    echo "=========================================="
+                    echo "Deploying ${ECR_REPOSITORY}:${IMAGE_TAG}"
+                    echo "=========================================="
 
                     COMMAND_ID=$(aws ssm send-command \
                         --region ${AWS_REGION} \
@@ -128,13 +130,15 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
-                    echo "Verifying task-api container on both EC2 instances..."
+                    echo "=========================================="
+                    echo "Verifying deployment"
+                    echo "=========================================="
 
                     COMMAND_ID=$(aws ssm send-command \
                         --region ${AWS_REGION} \
                         --instance-ids ${EC2_INSTANCE_1} ${EC2_INSTANCE_2} \
                         --document-name "AWS-RunShellScript" \
-                        --parameters 'commands=["docker ps --filter name=task-api --format "{{.Names}} {{.Image}} {{.Status}} {{.Ports}}","curl -s http://localhost:8080/health"]' \
+                        --parameters 'commands=["docker ps --filter name=task-api","curl -s http://localhost:8080/health"]' \
                         --query 'Command.CommandId' \
                         --output text)
 
@@ -152,6 +156,8 @@ pipeline {
                                 --instance-id "${INSTANCE_ID}" \
                                 --query 'Status' \
                                 --output text)
+
+                            echo "${INSTANCE_ID}: ${STATUS}"
 
                             if [ "${STATUS}" = "Success" ]; then
                                 break
@@ -176,7 +182,9 @@ pipeline {
                             sleep 3
                         done
 
-                        echo "===== ${INSTANCE_ID} ====="
+                        echo "=========================================="
+                        echo "RESULT: ${INSTANCE_ID}"
+                        echo "=========================================="
 
                         aws ssm get-command-invocation \
                             --region ${AWS_REGION} \
@@ -194,15 +202,21 @@ pipeline {
     post {
         success {
             echo "=========================================="
-            echo "DEPLOYMENT SUCCESSFUL"
+            echo "END-TO-END DEPLOYMENT SUCCESSFUL"
+            echo "=========================================="
             echo "Image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
             echo "EC2-1: ${EC2_INSTANCE_1}"
             echo "EC2-2: ${EC2_INSTANCE_2}"
+            echo "Application health checks passed."
             echo "=========================================="
         }
 
         failure {
-            echo "Deployment failed. Check the Jenkins console output."
+            echo "=========================================="
+            echo "PIPELINE FAILED"
+            echo "=========================================="
+            echo "Check the stage above for the failure."
+            echo "=========================================="
         }
     }
 }
