@@ -2,10 +2,10 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'ap-south-1'
-        ECR_REGISTRY = '427025827458.dkr.ecr.ap-south-1.amazonaws.com'
+        AWS_REGION    = 'ap-south-1'
+        ECR_REGISTRY  = '427025827458.dkr.ecr.ap-south-1.amazonaws.com'
         ECR_REPOSITORY = 'task-api'
-        IMAGE_TAG = "jenkins-${BUILD_NUMBER}"
+        IMAGE_TAG     = "jenkins-${BUILD_NUMBER}"
     }
 
     stages {
@@ -29,11 +29,9 @@ pipeline {
         stage('Build Image') {
             steps {
                 sh '''
-                    podman build \
-        --platform linux/amd64 \
-
-                      -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} \
-                      ./app
+                    podman build --platform linux/amd64 \
+                        -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} \
+                        ./app
                 '''
             }
         }
@@ -42,10 +40,9 @@ pipeline {
             steps {
                 sh '''
                     aws ecr get-login-password --region ${AWS_REGION} | \
-                    podman login \
-                      --username AWS \
-                      --password-stdin \
-                      ${ECR_REGISTRY}
+                        podman login \
+                        --username AWS \
+                        --password-stdin ${ECR_REGISTRY}
                 '''
             }
         }
@@ -54,7 +51,7 @@ pipeline {
             steps {
                 sh '''
                     podman push \
-                      ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+                        ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
                 '''
             }
         }
