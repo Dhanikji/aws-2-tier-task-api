@@ -1,9 +1,11 @@
 const express = require("express");
 const pool = require("./config/database");
+const taskRoutes = require("./routes/taskRoutes");
 
 const app = express();
 
 app.use(express.json());
+app.use("/api", taskRoutes);
 
 // Test database connection
 pool.query("SELECT NOW()", (err, result) => {
@@ -22,8 +24,4 @@ app.get("/health", (req, res) => {
     });
 });
 
-const PORT = process.env.PORT || 8080;
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+module.exports = app;
