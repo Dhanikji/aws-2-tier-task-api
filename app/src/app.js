@@ -1,20 +1,10 @@
 const express = require("express");
-const pool = require("./config/database");
 const taskRoutes = require("./routes/taskRoutes");
 
 const app = express();
 
 app.use(express.json());
 app.use("/api", taskRoutes);
-
-// Test database connection
-pool.query("SELECT NOW()", (err, result) => {
-    if (err) {
-        console.error("Database connection failed:", err);
-    } else {
-        console.log("Database connected:", result.rows[0]);
-    }
-});
 
 // Health check
 app.get("/health", (req, res) => {
